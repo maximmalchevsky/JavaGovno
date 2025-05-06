@@ -41,4 +41,28 @@ public class BookRepository {
         }
     }
 
+
+    public void delete(int id) throws SQLException {
+        String sql = "DELETE FROM books WHERE id = ?";
+        try (Connection c = ConnectionManager.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    // Обновить данные книги
+    public Book update(Book book) throws SQLException {
+        String sql = "UPDATE books SET title = ?, author = ?, isbn = ? WHERE id = ?";
+        try (Connection c = ConnectionManager.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, book.getTitle());
+            ps.setString(2, book.getAuthor());
+            ps.setString(3, book.getIsbn());
+            ps.setInt(4, book.getId());
+            ps.executeUpdate();
+            return book;
+        }
+    }
+
 }

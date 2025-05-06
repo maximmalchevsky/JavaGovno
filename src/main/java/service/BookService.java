@@ -27,4 +27,20 @@ public class BookService {
             throw new RuntimeException(e);
         }
     }
+
+    public void deleteBook(int id) {
+        try {
+            repo.delete(id);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Book updateBook(Book book) {
+        try {
+            return repo.update(book);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

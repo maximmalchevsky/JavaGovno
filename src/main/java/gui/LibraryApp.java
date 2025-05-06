@@ -2,11 +2,11 @@ package gui;
 
 import entities.Book;
 import service.BookService;
+import gui.AddBookDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
 import java.util.List;
 
 public class LibraryApp extends JFrame {
@@ -18,7 +18,7 @@ public class LibraryApp extends JFrame {
 
     private JButton addButton;
     private JButton deleteButton;
-    private JButton markReadButton;
+    private JButton editButton;
 
     public LibraryApp(BookService bookService) {
         this.bookService = bookService;
@@ -55,11 +55,11 @@ public class LibraryApp extends JFrame {
         Font btnFont = new Font("Segoe UI", Font.BOLD, 13);
         addButton = new JButton("Add");
         deleteButton = new JButton("Delete");
-        markReadButton = new JButton("Mark Read");
-        for (JButton btn : new JButton[]{addButton, deleteButton, markReadButton}) {
+        editButton = new JButton("Edit");
+        for (JButton btn : new JButton[]{addButton, deleteButton, editButton}) {
             btn.setFont(btnFont);
             btn.setFocusPainted(false);
-            btn.setPreferredSize(new Dimension(120,     30));
+            btn.setPreferredSize(new Dimension(120, 30));
         }
     }
 
@@ -70,7 +70,7 @@ public class LibraryApp extends JFrame {
         buttonPanel.setBackground(Color.WHITE);
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
-        buttonPanel.add(markReadButton);
+        buttonPanel.add(editButton);
 
         JPanel listPanel = new JPanel(new BorderLayout());
         listPanel.setBorder(BorderFactory.createTitledBorder(null, "Books",
@@ -94,7 +94,33 @@ public class LibraryApp extends JFrame {
             }
         });
 
+        deleteButton.addActionListener(e -> {
+            Book sel = bookList.getSelectedValue();
+            if (sel != null && JOptionPane.showConfirmDialog(
+                    this,
+                    "Удалить книгу:\n" + sel.getTitle() + " — " + sel.getAuthor() + "?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION
+            ) == JOptionPane.YES_OPTION) {
+                bookService.deleteBook(sel.getId());
+                loadBooksFromDb();
+            }
+        });
 
+        editButton.addActionListener(e -> {
+            Book sel = bookList.getSelectedValue();
+            if (sel != null) {
+                EditBookDialog dlg = new EditBookDialog(this, sel);
+                dlg.setVisible(true);
+                if (dlg.isSaved()) {
+                    sel.setTitle(dlg.getTitle());
+                    sel.setAuthor(dlg.getAuthor());
+                    sel.setIsbn(dlg.getIsbn());
+                    bookService.updateBook(sel);
+                    loadBooksFromDb();
+                }
+            }
+        });
     }
 
     private void loadBooksFromDb() {
@@ -140,66 +166,77 @@ public class LibraryApp extends JFrame {
             return lbl;
         }
     }
-}
 
-// Диалог без изменений, но можно задать прозрачный фон и отступы
-class AddBookDialog extends JDialog {
-    private final JTextField titleField   = new JTextField();
-    private final JTextField authorField  = new JTextField();
-    private final JTextField isbnField    = new JTextField();
-    private final JButton    saveButton   = new JButton("Save");
-    private final JButton    cancelButton = new JButton("Cancel");
-    private boolean saved = false;
+    // Диалог редактирования книги
+    private static class EditBookDialog extends JDialog {
+        private final JTextField titleField = new JTextField();
+        private final JTextField authorField = new JTextField();
+        private final JTextField isbnField = new JTextField();
+        private final JButton saveButton = new JButton("Save");
+        private final JButton cancelButton = new JButton("Cancel");
+        private boolean saved = false;
 
-    public AddBookDialog(JFrame parent) {
-        super(parent, "Add New Book", true);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        JPanel content = new JPanel(new BorderLayout(10, 10));
-        content.setBorder(new EmptyBorder(15, 15, 15, 15));
-        content.setBackground(Color.WHITE);
+        public EditBookDialog(JFrame parent, Book book) {
+            super(parent, "Edit Book", true);
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            JPanel content = new JPanel(new BorderLayout(10, 10));
+            content.setBorder(new EmptyBorder(15, 15, 15, 15));
+            content.setBackground(Color.WHITE);
 
-        JPanel input = new JPanel(new GridLayout(3, 2, 10, 10));
-        input.setOpaque(false);
-        input.add(new JLabel("Title:"));
-        input.add(titleField);
-        input.add(new JLabel("Author:"));
-        input.add(authorField);
-        input.add(new JLabel("ISBN:"));
-        input.add(isbnField);
-        content.add(input, BorderLayout.CENTER);
+            titleField.setText(book.getTitle());
+            authorField.setText(book.getAuthor());
+            isbnField.setText(book.getIsbn());
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttons.setOpaque(false);
-        saveButton.setPreferredSize(new Dimension(80, 30));
-        cancelButton.setPreferredSize(new Dimension(80, 30));
-        buttons.add(saveButton);
-        buttons.add(cancelButton);
-        content.add(buttons, BorderLayout.SOUTH);
+            JPanel input = new JPanel(new GridLayout(3, 2, 10, 10));
+            input.setOpaque(false);
+            input.add(new JLabel("Title:"));
+            input.add(titleField);
+            input.add(new JLabel("Author:"));
+            input.add(authorField);
+            input.add(new JLabel("ISBN:"));
+            input.add(isbnField);
+            content.add(input, BorderLayout.CENTER);
 
-        saveButton.addActionListener(e -> onSave());
-        cancelButton.addActionListener(e -> onCancel());
+            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            buttons.setOpaque(false);
+            saveButton.setPreferredSize(new Dimension(80, 30));
+            cancelButton.setPreferredSize(new Dimension(80, 30));
+            buttons.add(saveButton);
+            buttons.add(cancelButton);
+            content.add(buttons, BorderLayout.SOUTH);
 
-        setContentPane(content);
-        pack();
-        setLocationRelativeTo(parent);
-    }
+            saveButton.addActionListener(e -> onSave());
+            cancelButton.addActionListener(e -> onCancel());
 
-    private void onSave() {
-        if (titleField.getText().isBlank() || authorField.getText().isBlank() || isbnField.getText().isBlank()) {
-            JOptionPane.showMessageDialog(this, "Please fill all fields.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            setContentPane(content);
+            pack();
+            setLocationRelativeTo(parent);
         }
-        saved = true;
-        dispose();
-    }
 
-    private void onCancel() {
-        saved = false;
-        dispose();
-    }
+        private void onSave() {
+            if (titleField.getText().isBlank() ||
+                    authorField.getText().isBlank() ||
+                    isbnField.getText().isBlank()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please fill all fields.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+            saved = true;
+            dispose();
+        }
 
-    public boolean isSaved() { return saved; }
-    public String getTitle() { return titleField.getText().trim(); }
-    public String getAuthor() { return authorField.getText().trim(); }
-    public String getIsbn() { return isbnField.getText().trim(); }
+        private void onCancel() {
+            saved = false;
+            dispose();
+        }
+
+        public boolean isSaved() { return saved; }
+        public String getTitle()  { return titleField.getText().trim(); }
+        public String getAuthor() { return authorField.getText().trim(); }
+        public String getIsbn()   { return isbnField.getText().trim(); }
+    }
 }
