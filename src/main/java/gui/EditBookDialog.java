@@ -1,19 +1,25 @@
 package gui;
 
+import entities.Book;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-public class AddBookDialog extends JDialog {
+public class EditBookDialog extends JDialog {
 
     private final JTextField titleField  = new JTextField();
     private final JTextField authorField = new JTextField();
     private final JTextField isbnField   = new JTextField();
     private boolean saved = false;
 
-    public AddBookDialog(JFrame parent) {
-        super(parent, "Add New Book", true);
+    public EditBookDialog(JFrame parent, Book book) {
+        super(parent, "Edit Book", true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        titleField.setText(book.getTitle());
+        authorField.setText(book.getAuthor());
+        isbnField.setText(book.getIsbn());
 
         JPanel content = new JPanel(new BorderLayout(10, 10));
         content.setBorder(new EmptyBorder(15, 15, 15, 15));

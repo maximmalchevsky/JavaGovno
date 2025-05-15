@@ -1,114 +1,104 @@
 package gui;
 
 import entities.Book;
-import service.BookService;
 import gui.AddBookDialog;
+import gui.EditBookDialog;
+import service.Service;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Чистый слой представления: получает готовый Service через конструктор.
+ */
 public class LibraryApp extends JFrame {
 
-    private final BookService bookService;
+    private final Service service;
 
-    private DefaultListModel<Book> bookListModel;
-    private JList<Book> bookList;
+    private final DefaultListModel<Book> model = new DefaultListModel<>();
+    private final JList<Book>            list  = new JList<>(model);
+    private final JButton btnAdd    = new JButton("Add");
+    private final JButton btnDelete = new JButton("Delete");
+    private final JButton btnEdit   = new JButton("Edit");
 
-    private JButton addButton;
-    private JButton deleteButton;
-    private JButton editButton;
+    public LibraryApp(Service service) {
+        this.service = service;
 
-    public LibraryApp(BookService bookService) {
-        this.bookService = bookService;
-
-        // Устанавливаем современный Nimbus L&F
-        try {
-            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-        } catch (Exception e) {
-            System.err.println("Не удалось установить Nimbus L&F: " + e);
-        }
+        /* Nimbus L&F */
+        try { UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); }
+        catch (Exception ignored) {}
 
         setTitle("My Library");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1100, 750);
         setLocationRelativeTo(null);
 
         initComponents();
         initLayout();
         initListeners();
-
-        loadBooksFromDb();
+        reloadBooks();
     }
 
-    private void initComponents() {
-        // Модель и список
-        bookListModel = new DefaultListModel<>();
-        bookList = new JList<>(bookListModel);
-        bookList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        bookList.setBorder(new EmptyBorder(5, 5, 5, 5));
-        bookList.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        bookList.setCellRenderer(new BookCellRenderer());
+    /* ----------------------- UI helpers --------------------------------- */
 
-        // Кнопки
-        Font btnFont = new Font("Segoe UI", Font.BOLD, 13);
-        addButton = new JButton("Add");
-        deleteButton = new JButton("Delete");
-        editButton = new JButton("Edit");
-        for (JButton btn : new JButton[]{addButton, deleteButton, editButton}) {
-            btn.setFont(btnFont);
-            btn.setFocusPainted(false);
-            btn.setPreferredSize(new Dimension(120, 30));
+    private void initComponents() {
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setBorder(new EmptyBorder(5, 5, 5, 5));
+        list.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        list.setCellRenderer(new BookCellRenderer());
+
+        for (JButton b : new JButton[]{btnAdd, btnDelete, btnEdit}) {
+            b.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            b.setPreferredSize(new Dimension(120, 30));
+            b.setFocusPainted(false);
         }
     }
 
     private void initLayout() {
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(addButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(editButton);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        buttons.setBorder(new EmptyBorder(10, 10, 10, 10));
+        buttons.setBackground(Color.WHITE);
+        buttons.add(btnAdd);
+        buttons.add(btnDelete);
+        buttons.add(btnEdit);
 
         JPanel listPanel = new JPanel(new BorderLayout());
-        listPanel.setBorder(BorderFactory.createTitledBorder(null, "Books",
-                0, 0, new Font("Segoe UI", Font.BOLD, 16), Color.DARK_GRAY));
+        listPanel.setBorder(BorderFactory.createTitledBorder(
+                null, "Books", 0, 0,
+                new Font("Segoe UI", Font.BOLD, 16), Color.DARK_GRAY));
         listPanel.setBackground(Color.WHITE);
-        listPanel.add(new JScrollPane(bookList), BorderLayout.CENTER);
+        listPanel.add(new JScrollPane(list), BorderLayout.CENTER);
 
         getContentPane().setBackground(Color.WHITE);
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(buttonPanel, BorderLayout.NORTH);
+        getContentPane().add(buttons, BorderLayout.NORTH);
         getContentPane().add(listPanel, BorderLayout.WEST);
     }
 
     private void initListeners() {
-        addButton.addActionListener(e -> {
+        btnAdd.addActionListener(e -> {
             AddBookDialog dlg = new AddBookDialog(this);
             dlg.setVisible(true);
             if (dlg.isSaved()) {
-                bookService.addBook(dlg.getTitle(), dlg.getAuthor(), dlg.getIsbn());
-                loadBooksFromDb();
+                service.addBook(dlg.getTitle(), dlg.getAuthor(), dlg.getIsbn());
+                reloadBooks();
             }
         });
 
-        deleteButton.addActionListener(e -> {
-            Book sel = bookList.getSelectedValue();
+        btnDelete.addActionListener(e -> {
+            Book sel = list.getSelectedValue();
             if (sel != null && JOptionPane.showConfirmDialog(
-                    this,
-                    "Удалить книгу:\n" + sel.getTitle() + " — " + sel.getAuthor() + "?",
-                    "Confirm Delete",
-                    JOptionPane.YES_NO_OPTION
-            ) == JOptionPane.YES_OPTION) {
-                bookService.deleteBook(sel.getId());
-                loadBooksFromDb();
+                    this, "Delete \"" + sel.getTitle() + "\"?",
+                    "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                service.deleteBook(sel.getId());
+                reloadBooks();
             }
         });
 
-        editButton.addActionListener(e -> {
-            Book sel = bookList.getSelectedValue();
+        btnEdit.addActionListener(e -> {
+            Book sel = list.getSelectedValue();
             if (sel != null) {
                 EditBookDialog dlg = new EditBookDialog(this, sel);
                 dlg.setVisible(true);
@@ -116,127 +106,32 @@ public class LibraryApp extends JFrame {
                     sel.setTitle(dlg.getTitle());
                     sel.setAuthor(dlg.getAuthor());
                     sel.setIsbn(dlg.getIsbn());
-                    bookService.updateBook(sel);
-                    loadBooksFromDb();
+                    service.updateBook(sel);
+                    reloadBooks();
                 }
             }
         });
     }
 
-    private void loadBooksFromDb() {
-        bookListModel.clear();
-        List<Book> books = bookService.listBooks();
-        for (Book b : books) {
-            bookListModel.addElement(b);
-        }
+    private void reloadBooks() {
+        model.clear();
+        List<Book> books = service.listBooks();
+        books.forEach(model::addElement);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            BookService bookService = new BookService();
-            LibraryApp app = new LibraryApp(bookService);
-            app.setVisible(true);
-        });
-    }
-
-    // Кастомный рендерер для списка книг
+    /* ---------- renderer ---------- */
     private static class BookCellRenderer extends DefaultListCellRenderer {
         private static final Color ALT_BG = new Color(245, 245, 245);
-        private static final Font LIST_FONT = new Font("Segoe UI", Font.PLAIN, 14);
-
         @Override
         public Component getListCellRendererComponent(
-                JList<?> list, Object value, int index,
-                boolean isSelected, boolean cellHasFocus
-        ) {
-            JLabel lbl = (JLabel) super.getListCellRendererComponent(
-                    list, value, index, isSelected, cellHasFocus
-            );
-            if (value instanceof Book) {
-                Book b = (Book) value;
-                String txt = String.format("%d: %s - %s | ISBN: %s",
-                        b.getId(), b.getTitle(), b.getAuthor(), b.getIsbn());
-                lbl.setText(txt);
+                JList<?> l, Object v, int i, boolean s, boolean f) {
+            JLabel lbl = (JLabel) super.getListCellRendererComponent(l, v, i, s, f);
+            if (v instanceof Book b) {
+                lbl.setText("%d: %s - %s | ISBN: %s"
+                        .formatted(b.getId(), b.getTitle(), b.getAuthor(), b.getIsbn()));
             }
-            lbl.setFont(LIST_FONT);
-            lbl.setBorder(new EmptyBorder(5, 5, 5, 5));
-            if (!isSelected) {
-                lbl.setBackground(index % 2 == 0 ? ALT_BG : Color.WHITE);
-            }
+            if (!s) lbl.setBackground(i % 2 == 0 ? ALT_BG : Color.WHITE);
             return lbl;
         }
-    }
-
-    // Диалог редактирования книги
-    private static class EditBookDialog extends JDialog {
-        private final JTextField titleField = new JTextField();
-        private final JTextField authorField = new JTextField();
-        private final JTextField isbnField = new JTextField();
-        private final JButton saveButton = new JButton("Save");
-        private final JButton cancelButton = new JButton("Cancel");
-        private boolean saved = false;
-
-        public EditBookDialog(JFrame parent, Book book) {
-            super(parent, "Edit Book", true);
-            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-            JPanel content = new JPanel(new BorderLayout(10, 10));
-            content.setBorder(new EmptyBorder(15, 15, 15, 15));
-            content.setBackground(Color.WHITE);
-
-            titleField.setText(book.getTitle());
-            authorField.setText(book.getAuthor());
-            isbnField.setText(book.getIsbn());
-
-            JPanel input = new JPanel(new GridLayout(3, 2, 10, 10));
-            input.setOpaque(false);
-            input.add(new JLabel("Title:"));
-            input.add(titleField);
-            input.add(new JLabel("Author:"));
-            input.add(authorField);
-            input.add(new JLabel("ISBN:"));
-            input.add(isbnField);
-            content.add(input, BorderLayout.CENTER);
-
-            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            buttons.setOpaque(false);
-            saveButton.setPreferredSize(new Dimension(80, 30));
-            cancelButton.setPreferredSize(new Dimension(80, 30));
-            buttons.add(saveButton);
-            buttons.add(cancelButton);
-            content.add(buttons, BorderLayout.SOUTH);
-
-            saveButton.addActionListener(e -> onSave());
-            cancelButton.addActionListener(e -> onCancel());
-
-            setContentPane(content);
-            pack();
-            setLocationRelativeTo(parent);
-        }
-
-        private void onSave() {
-            if (titleField.getText().isBlank() ||
-                    authorField.getText().isBlank() ||
-                    isbnField.getText().isBlank()) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Please fill all fields.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-                return;
-            }
-            saved = true;
-            dispose();
-        }
-
-        private void onCancel() {
-            saved = false;
-            dispose();
-        }
-
-        public boolean isSaved() { return saved; }
-        public String getTitle()  { return titleField.getText().trim(); }
-        public String getAuthor() { return authorField.getText().trim(); }
-        public String getIsbn()   { return isbnField.getText().trim(); }
     }
 }

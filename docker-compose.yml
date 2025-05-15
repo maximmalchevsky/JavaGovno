@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "5432:5432"
+    env_file:
+      - ./src/main/java/.env
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=12345678

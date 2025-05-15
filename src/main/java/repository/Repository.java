@@ -6,28 +6,45 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+public class Repository {
+    private final Database db;
 
-public class BookRepository {
-    public Book save(Book book) throws SQLException {
-        String sql = "INSERT INTO books (title, author, isbn) VALUES (?, ?, ?) RETURNING id";
-        try (Connection c = ConnectionManager.getConnection();
+
+    public Repository(Database db) {
+        this.db = db;
+    }
+
+    public Database getDb() {
+        return db;
+    }
+
+
+    public Book save(Book book) {
+        String sql = "INSERT INTO books(title, author, isbn) VALUES(?,?,?) RETURNING id";
+        try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
+
             ps.setString(1, book.getTitle());
             ps.setString(2, book.getAuthor());
             ps.setString(3, book.getIsbn());
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                book.setId(rs.getInt("id"));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) book.setId(rs.getInt(1));
             }
             return book;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot save book", e);
         }
     }
 
-    public List<Book> findAll() throws SQLException {
-        String sql = "SELECT id, title, author, isbn FROM books";
-        try (Connection c = ConnectionManager.getConnection();
+
+    public List<Book> findAll() {
+        String sql = "SELECT id, title, author, isbn FROM books ORDER BY id";
+        try (Connection c = db.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
+
             List<Book> list = new ArrayList<>();
             while (rs.next()) {
                 list.add(new Book(
@@ -38,31 +55,45 @@ public class BookRepository {
                 ));
             }
             return list;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot load books", e);
         }
     }
 
 
-    public void delete(int id) throws SQLException {
+    public void delete(int id) {
         String sql = "DELETE FROM books WHERE id = ?";
-        try (Connection c = ConnectionManager.getConnection();
+        try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
+
             ps.setInt(1, id);
             ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot delete book " + id, e);
         }
     }
 
     // Обновить данные книги
-    public Book update(Book book) throws SQLException {
+    public Book update(Book book) {
         String sql = "UPDATE books SET title = ?, author = ?, isbn = ? WHERE id = ?";
-        try (Connection c = ConnectionManager.getConnection();
+        try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
+
             ps.setString(1, book.getTitle());
             ps.setString(2, book.getAuthor());
             ps.setString(3, book.getIsbn());
             ps.setInt(4, book.getId());
-            ps.executeUpdate();
+
+            int affected = ps.executeUpdate();
+            if (affected != 1)                         // на всякий случай
+                throw new RuntimeException("Book id " + book.getId() + " not found");
+
             return book;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update book " + book.getId(), e);
         }
     }
-
 }
