@@ -25,12 +25,11 @@ public class LibraryApp extends JFrame {
     private final JTextField authorSearchField = new JTextField(20);
     private final JButton btnSearch = new JButton("Search");
     private final JButton btnReset = new JButton("Reset");
-
+    private final JCheckBox readCheck = new JCheckBox("Read");
 
     public LibraryApp(Service service) {
         this.service = service;
 
-        /* Nimbus L&F */
         try { UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); }
         catch (Exception ignored) {}
 
@@ -45,8 +44,6 @@ public class LibraryApp extends JFrame {
         reloadBooks();
     }
 
-    /* ----------------------- UI helpers --------------------------------- */
-
     private void initComponents() {
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -58,6 +55,7 @@ public class LibraryApp extends JFrame {
             b.setPreferredSize(new Dimension(120, 30));
             b.setFocusPainted(false);
         }
+
         authorSearchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnSearch.setPreferredSize(new Dimension(100, 30));
@@ -67,6 +65,7 @@ public class LibraryApp extends JFrame {
         btnReset.setPreferredSize(new Dimension(100, 30));
         btnReset.setFocusPainted(false);
 
+        readCheck.setFont(new Font("Segoe UI", Font.PLAIN, 13));
     }
 
     private void initLayout() {
@@ -81,7 +80,7 @@ public class LibraryApp extends JFrame {
         buttons.add(authorSearchField);
         buttons.add(btnSearch);
         buttons.add(btnReset);
-
+        buttons.add(readCheck); // ← добавлено
 
         JPanel listPanel = new JPanel(new BorderLayout());
         listPanel.setBorder(BorderFactory.createTitledBorder(
@@ -101,7 +100,12 @@ public class LibraryApp extends JFrame {
             AddBookDialog dlg = new AddBookDialog(this);
             dlg.setVisible(true);
             if (dlg.isSaved()) {
-                service.addBook(dlg.getTitle(), dlg.getAuthor(), dlg.getIsbn());
+                service.addBook(
+                        dlg.getTitle(),
+                        dlg.getAuthor(),
+                        dlg.getIsbn(),
+                        dlg.isRead()
+                );
                 reloadBooks();
             }
         });
@@ -114,7 +118,6 @@ public class LibraryApp extends JFrame {
                 service.deleteBook(sel.getId());
                 reloadBooks();
             }
-
         });
 
         btnEdit.addActionListener(e -> {
@@ -126,6 +129,7 @@ public class LibraryApp extends JFrame {
                     sel.setTitle(dlg.getTitle());
                     sel.setAuthor(dlg.getAuthor());
                     sel.setIsbn(dlg.getIsbn());
+                    sel.setIs_read(dlg.isRead());
                     service.updateBook(sel);
                     reloadBooks();
                 }
@@ -134,18 +138,29 @@ public class LibraryApp extends JFrame {
 
         btnSearch.addActionListener(e -> {
             String author = authorSearchField.getText().trim();
+            boolean onlyRead = readCheck.isSelected();
+
+            model.clear();
+            List<Book> books;
+
             if (!author.isEmpty()) {
-                model.clear();
-                List<Book> books = service.findBooksByAuthor(author);
-                books.forEach(model::addElement);
+                books = service.findBooksByAuthor(author);
+            } else {
+                books = service.listBooks();
             }
+
+            if (onlyRead) {
+                books.removeIf(b -> !Boolean.TRUE.equals(b.getIs_read()));
+            }
+
+            books.forEach(model::addElement);
         });
 
         btnReset.addActionListener(e -> {
             authorSearchField.setText("");
+            readCheck.setSelected(false);
             reloadBooks();
         });
-
     }
 
     private void reloadBooks() {
@@ -154,7 +169,6 @@ public class LibraryApp extends JFrame {
         books.forEach(model::addElement);
     }
 
-    /* ---------- renderer ---------- */
     private static class BookCellRenderer extends DefaultListCellRenderer {
         private static final Color ALT_BG = new Color(245, 245, 245);
         @Override
@@ -162,8 +176,14 @@ public class LibraryApp extends JFrame {
                 JList<?> l, Object v, int i, boolean s, boolean f) {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(l, v, i, s, f);
             if (v instanceof Book b) {
-                lbl.setText("%d: %s - %s | ISBN: %s"
-                        .formatted(b.getId(), b.getTitle(), b.getAuthor(), b.getIsbn()));
+                lbl.setText("%d: %s - %s | ISBN: %s | Read: %s"
+                        .formatted(
+                                b.getId(),
+                                b.getTitle(),
+                                b.getAuthor(),
+                                b.getIsbn(),
+                                Boolean.TRUE.equals(b.getIs_read()) ? "✔" : "✘"
+                        ));
             }
             if (!s) lbl.setBackground(i % 2 == 0 ? ALT_BG : Color.WHITE);
             return lbl;

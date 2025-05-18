@@ -3,7 +3,6 @@ package service;
 import entities.Book;
 import repository.Repository;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class Service {
@@ -13,10 +12,9 @@ public class Service {
         this.repository = repository;
     }
 
-    public Book addBook(String title, String author, String isbn) {
-        return repository.save(new Book(title, author, isbn));
+    public Book addBook(String title, String author, String isbn, boolean is_read) {
+        return repository.save(new Book(title, author, isbn, is_read));
     }
-
 
     public List<Book> listBooks() {
         return repository.findAll();
@@ -33,5 +31,5 @@ public class Service {
     public List<Book> findBooksByAuthor(String author) {
         return repository.findByAuthor(author);
     }
-
 }
+

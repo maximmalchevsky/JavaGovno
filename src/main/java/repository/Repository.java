@@ -20,13 +20,14 @@ public class Repository {
 
 
     public Book save(Book book) {
-        String sql = "INSERT INTO books(title, author, isbn) VALUES(?,?,?) RETURNING id";
+        String sql = "INSERT INTO books(title, author, isbn, is_read) VALUES(?,?,?,?) RETURNING id";
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, book.getTitle());
             ps.setString(2, book.getAuthor());
             ps.setString(3, book.getIsbn());
+            ps.setBoolean(4, book.getIs_read());
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) book.setId(rs.getInt(1));
@@ -40,7 +41,7 @@ public class Repository {
 
 
     public List<Book> findAll() {
-        String sql = "SELECT id, title, author, isbn FROM books ORDER BY id";
+        String sql = "SELECT id, title, author, isbn, is_read FROM books ORDER BY id";
         try (Connection c = db.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
@@ -51,7 +52,8 @@ public class Repository {
                         rs.getInt("id"),
                         rs.getString("title"),
                         rs.getString("author"),
-                        rs.getString("isbn")
+                        rs.getString("isbn"),
+                        rs.getBoolean("is_read")
                 ));
             }
             return list;
@@ -77,7 +79,7 @@ public class Repository {
 
     // Обновить данные книги
     public Book update(Book book) {
-        String sql = "UPDATE books SET title = ?, author = ?, isbn = ? WHERE id = ?";
+        String sql = "UPDATE books SET title = ?, author = ?, isbn = ?, is_read = ? WHERE id = ?\n";
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
@@ -98,7 +100,7 @@ public class Repository {
     }
 
     public List<Book> findByAuthor(String author) {
-        String sql = "SELECT id, title, author, isbn FROM books WHERE LOWER(author) LIKE LOWER(?) ORDER BY id";
+        String sql = "SELECT id, title, author, isbn FROM books WHERE author ILIKE ? ORDER BY id";
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
@@ -111,7 +113,9 @@ public class Repository {
                             rs.getInt("id"),
                             rs.getString("title"),
                             rs.getString("author"),
-                            rs.getString("isbn")
+                            rs.getString("isbn"),
+                            rs.getBoolean("is_read")
+
                     ));
                 }
                 return result;

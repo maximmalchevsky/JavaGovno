@@ -34,7 +34,8 @@ public final class Database {
                       id SERIAL PRIMARY KEY,
                       title   VARCHAR(255) NOT NULL,
                       author  VARCHAR(255) NOT NULL,
-                      isbn    VARCHAR(50)  UNIQUE NOT NULL
+                      isbn    VARCHAR(50)  UNIQUE NOT NULL,
+                      is_read BOOLEAN NOT NULL default false
                     );
                 """);
             }
