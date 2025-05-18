@@ -18,7 +18,7 @@ public class Config {
     }
 
     public static Config load() {
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().filename(".env").load();
+        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().filename("../.env").load();
         String host = dotenv.get("POSTGRES_HOST", "localhost");
         String port = dotenv.get("POSTGRES_PORT", "5432");
         String user = dotenv.get("POSTGRES_USER", "postgres");
