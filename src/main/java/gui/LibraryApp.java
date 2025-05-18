@@ -22,6 +22,10 @@ public class LibraryApp extends JFrame {
     private final JButton btnAdd    = new JButton("Add");
     private final JButton btnDelete = new JButton("Delete");
     private final JButton btnEdit   = new JButton("Edit");
+    private final JTextField authorSearchField = new JTextField(20);
+    private final JButton btnSearch = new JButton("Search");
+    private final JButton btnReset = new JButton("Reset");
+
 
     public LibraryApp(Service service) {
         this.service = service;
@@ -54,6 +58,15 @@ public class LibraryApp extends JFrame {
             b.setPreferredSize(new Dimension(120, 30));
             b.setFocusPainted(false);
         }
+        authorSearchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnSearch.setPreferredSize(new Dimension(100, 30));
+        btnSearch.setFocusPainted(false);
+
+        btnReset.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnReset.setPreferredSize(new Dimension(100, 30));
+        btnReset.setFocusPainted(false);
+
     }
 
     private void initLayout() {
@@ -63,6 +76,12 @@ public class LibraryApp extends JFrame {
         buttons.add(btnAdd);
         buttons.add(btnDelete);
         buttons.add(btnEdit);
+
+        buttons.add(new JLabel("Search by author:"));
+        buttons.add(authorSearchField);
+        buttons.add(btnSearch);
+        buttons.add(btnReset);
+
 
         JPanel listPanel = new JPanel(new BorderLayout());
         listPanel.setBorder(BorderFactory.createTitledBorder(
@@ -95,6 +114,7 @@ public class LibraryApp extends JFrame {
                 service.deleteBook(sel.getId());
                 reloadBooks();
             }
+
         });
 
         btnEdit.addActionListener(e -> {
@@ -111,6 +131,21 @@ public class LibraryApp extends JFrame {
                 }
             }
         });
+
+        btnSearch.addActionListener(e -> {
+            String author = authorSearchField.getText().trim();
+            if (!author.isEmpty()) {
+                model.clear();
+                List<Book> books = service.findBooksByAuthor(author);
+                books.forEach(model::addElement);
+            }
+        });
+
+        btnReset.addActionListener(e -> {
+            authorSearchField.setText("");
+            reloadBooks();
+        });
+
     }
 
     private void reloadBooks() {

@@ -29,4 +29,9 @@ public class Service {
     public Book updateBook(Book book) {
         return repository.update(book);
     }
+
+    public List<Book> findBooksByAuthor(String author) {
+        return repository.findByAuthor(author);
+    }
+
 }

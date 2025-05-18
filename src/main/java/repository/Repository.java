@@ -96,4 +96,30 @@ public class Repository {
             throw new RuntimeException("Cannot update book " + book.getId(), e);
         }
     }
+
+    public List<Book> findByAuthor(String author) {
+        String sql = "SELECT id, title, author, isbn FROM books WHERE LOWER(author) LIKE LOWER(?) ORDER BY id";
+        try (Connection c = db.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + author + "%"); // позволяет искать по части имени
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Book> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(new Book(
+                            rs.getInt("id"),
+                            rs.getString("title"),
+                            rs.getString("author"),
+                            rs.getString("isbn")
+                    ));
+                }
+                return result;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find books by author: " + author, e);
+        }
+    }
+
 }
