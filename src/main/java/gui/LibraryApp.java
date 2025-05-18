@@ -8,6 +8,8 @@ import service.Service;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 /**
@@ -129,32 +131,46 @@ public class LibraryApp extends JFrame {
                     sel.setTitle(dlg.getTitle());
                     sel.setAuthor(dlg.getAuthor());
                     sel.setIsbn(dlg.getIsbn());
-                    sel.setIs_read(dlg.isRead());
+                    sel.setIsRead(dlg.isRead());
                     service.updateBook(sel);
                     reloadBooks();
                 }
             }
         });
 
-        btnSearch.addActionListener(e -> {
-            String author = authorSearchField.getText().trim();
-            boolean onlyRead = readCheck.isSelected();
+        list.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int index = list.locationToIndex(e.getPoint());
+                if (index < 0) return;
 
-            model.clear();
-            List<Book> books;
+                Rectangle bounds = list.getCellBounds(index, index);
+                int xInCell = e.getX() - bounds.x;
 
-            if (!author.isEmpty()) {
-                books = service.findBooksByAuthor(author);
-            } else {
-                books = service.listBooks();
+                // при клике в область чекбокса
+                if (xInCell < BookCellRenderer.BOX_WIDTH) {
+                    Book book = model.getElementAt(index);
+                    boolean newRead = !Boolean.TRUE.equals(book.getIsRead());
+
+                    // 1) сохраняем в БД
+                    service.setRead(book.getId(), newRead);
+                    reloadBooks();
+
+                    // 2) меняем локальный объект
+                    book.setIsRead(newRead);
+
+                    // ← вот тут: говорим модели, что элемент изменился
+                    model.setElementAt(book, index);
+
+                    // 3) (необязательно) досрочная перерисовка этой ячейки
+                    list.repaint(bounds);
+                }
             }
-
-            if (onlyRead) {
-                books.removeIf(b -> !Boolean.TRUE.equals(b.getIs_read()));
-            }
-
-            books.forEach(model::addElement);
         });
+
+
+        btnSearch.addActionListener(e -> applyFilter());
+        readCheck.addActionListener(e -> applyFilter());
 
         btnReset.addActionListener(e -> {
             authorSearchField.setText("");
@@ -169,24 +185,61 @@ public class LibraryApp extends JFrame {
         books.forEach(model::addElement);
     }
 
-    private static class BookCellRenderer extends DefaultListCellRenderer {
+    private void applyFilter() {
+        String author = authorSearchField.getText().trim();
+        boolean onlyRead = readCheck.isSelected();
+
+        List<Book> books = author.isEmpty()
+                ? service.listBooks()
+                : service.findBooksByAuthor(author);
+
+        if (onlyRead) {
+            books.removeIf(b -> !Boolean.TRUE.equals(b.getIsRead()));
+        }
+
+        model.clear();
+        books.forEach(model::addElement);
+    }
+
+    private static class BookCellRenderer extends JCheckBox implements ListCellRenderer<Book> {
         private static final Color ALT_BG = new Color(245, 245, 245);
+
+        // Рассчитываем: отступ слева + ширина иконки + зазор между иконкой и текстом
+        public static final int BOX_WIDTH;
+        static {
+            JCheckBox tmp = new JCheckBox();
+            Insets ins = tmp.getInsets();                    // граничные отступы
+            Icon icon = UIManager.getIcon("CheckBox.icon");  // иконка чекбокса в Nimbus
+            BOX_WIDTH = ins.left + icon.getIconWidth() + tmp.getIconTextGap();
+        }
+
+        public BookCellRenderer() {
+            setOpaque(true);
+            setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            setBorder(new EmptyBorder(5, 5, 5, 5));
+        }
+
         @Override
-        public Component getListCellRendererComponent(
-                JList<?> l, Object v, int i, boolean s, boolean f) {
-            JLabel lbl = (JLabel) super.getListCellRendererComponent(l, v, i, s, f);
-            if (v instanceof Book b) {
-                lbl.setText("%d: %s - %s | ISBN: %s | Read: %s"
-                        .formatted(
-                                b.getId(),
-                                b.getTitle(),
-                                b.getAuthor(),
-                                b.getIsbn(),
-                                Boolean.TRUE.equals(b.getIs_read()) ? "✔" : "✘"
-                        ));
+        public Component getListCellRendererComponent(JList<? extends Book> list,
+                                                      Book book,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            setText(String.format("%d: %s — %s (ISBN: %s)",
+                    book.getId(), book.getTitle(), book.getAuthor(), book.getIsbn()));
+            setSelected(Boolean.TRUE.equals(book.getIsRead()));
+
+            if (isSelected) {
+                setBackground(list.getSelectionBackground());
+                setForeground(list.getSelectionForeground());
+            } else {
+                setBackground(index % 2 == 0 ? ALT_BG : Color.WHITE);
+                setForeground(list.getForeground());
             }
-            if (!s) lbl.setBackground(i % 2 == 0 ? ALT_BG : Color.WHITE);
-            return lbl;
+            return this;
         }
     }
+
+
+
 }

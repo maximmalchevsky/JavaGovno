@@ -18,32 +18,37 @@ public class EditBookDialog extends JDialog {
         super(parent, "Edit Book", true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        // инициализируем поля из переданного объекта
         titleField.setText(book.getTitle());
         authorField.setText(book.getAuthor());
         isbnField.setText(book.getIsbn());
-        readCheck.setSelected(book.getIs_read());
+        readCheck.setSelected(book.getIsRead());
 
         JPanel content = new JPanel(new BorderLayout(10, 10));
         content.setBorder(new EmptyBorder(15, 15, 15, 15));
 
+        // Собираем форму: теперь 4 строки (Title, Author, ISBN, Read)
         JPanel grid = new JPanel(new GridLayout(4, 2, 10, 10));
         grid.add(new JLabel("Title:"));   grid.add(titleField);
         grid.add(new JLabel("Author:"));  grid.add(authorField);
         grid.add(new JLabel("ISBN:"));    grid.add(isbnField);
-        grid.add(new JLabel("Is Read:")); grid.add(readCheck);
+        grid.add(new JLabel("Read:"));    grid.add(readCheck);  // ← добавлено
+
         content.add(grid, BorderLayout.CENTER);
 
         JButton save   = new JButton("Save");
         JButton cancel = new JButton("Cancel");
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttons.add(save); buttons.add(cancel);
+        buttons.add(save);
+        buttons.add(cancel);
         content.add(buttons, BorderLayout.SOUTH);
 
         save.addActionListener(e -> onSave());
         cancel.addActionListener(e -> dispose());
 
         setContentPane(content);
-        pack(); setLocationRelativeTo(parent);
+        pack();
+        setLocationRelativeTo(parent);
     }
 
     private void onSave() {

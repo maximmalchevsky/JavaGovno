@@ -27,7 +27,7 @@ public class Repository {
             ps.setString(1, book.getTitle());
             ps.setString(2, book.getAuthor());
             ps.setString(3, book.getIsbn());
-            ps.setBoolean(4, book.getIs_read());
+            ps.setBoolean(4, book.getIsRead());
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) book.setId(rs.getInt(1));
@@ -77,34 +77,72 @@ public class Repository {
         }
     }
 
-    // Обновить данные книги
+    public void setRead(int id, boolean isRead) {
+        System.out.println("Repository.setRead: id=" + id + ", isRead=" + isRead);
+        String sql = "UPDATE books SET is_read = ? WHERE id = ?";
+        try (Connection c = db.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            // Убедимся, что коммит будет явно:
+            if (!c.getAutoCommit()) {
+                c.setAutoCommit(false);
+            }
+
+            ps.setBoolean(1, isRead);
+            ps.setInt(2, id);
+            int affected = ps.executeUpdate();
+            System.out.println("  -> affected rows = " + affected);
+            if (affected != 1) {
+                throw new RuntimeException("Book id " + id + " not found");
+            }
+
+            // **Важный шаг**: докоммитить
+            c.commit();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Cannot update book " + id, e);
+        }
+    }
+
+
+
+    // в файле repository/Repository.java
     public Book update(Book book) {
-        String sql = "UPDATE books SET title = ?, author = ?, isbn = ?, is_read = ? WHERE id = ?\n";
+        String sql = """
+        UPDATE books
+           SET title   = ?,
+               author  = ?,
+               isbn    = ?,
+               is_read = ?    -- ← добавили
+         WHERE id = ?
+        """;
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, book.getTitle());
             ps.setString(2, book.getAuthor());
             ps.setString(3, book.getIsbn());
-            ps.setInt(4, book.getId());
+            ps.setBoolean(4, book.getIsRead());   // ← сохраняем чек-бокс
+            ps.setInt(5, book.getId());
 
             int affected = ps.executeUpdate();
-            if (affected != 1)                         // на всякий случай
+            if (affected != 1)
                 throw new RuntimeException("Book id " + book.getId() + " not found");
 
             return book;
-
         } catch (SQLException e) {
             throw new RuntimeException("Cannot update book " + book.getId(), e);
         }
     }
 
+
     public List<Book> findByAuthor(String author) {
-        String sql = "SELECT id, title, author, isbn FROM books WHERE author ILIKE ? ORDER BY id";
+        String sql = "SELECT id, title, author, isbn, is_read FROM books WHERE author ILIKE ? ORDER BY id";
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setString(1, "%" + author + "%"); // позволяет искать по части имени
+            ps.setString(1, "%" + author + "%");
 
             try (ResultSet rs = ps.executeQuery()) {
                 List<Book> result = new ArrayList<>();

@@ -5,32 +5,34 @@ public class Book {
     private String title;
     private String author;
     private String isbn;
-    private Boolean is_read;
+    private Boolean isRead;
 
+    //sql -> is_read
+    //java -> isRead
     // Конструкторы
-    public Book(String title, String author, String isbn, Boolean is_read) {
-        this(null, title, author, isbn, is_read);
+    public Book(String title, String author, String isbn, Boolean isRead) {
+        this(null, title, author, isbn, isRead);
     }
 
-    public Book(Integer id, String title, String author, String isbn, Boolean is_read) {
+    public Book(Integer id, String title, String author, String isbn, Boolean isRead) {
         this.id     = id;
         this.title  = title;
         this.author = author;
         this.isbn   = isbn;
-        this.is_read = is_read;
+        this.isRead = isRead;
     }
 
     public Integer getId()    { return id; }
     public String  getTitle() { return title; }
     public String  getAuthor(){ return author; }
     public String  getIsbn()  { return isbn; }
-    public Boolean  getIs_read()  { return is_read; }
+    public Boolean  getIsRead()  { return isRead; }
 
     public void setId(Integer id)       { this.id = id; }
     public void setTitle(String title)  { this.title = title; }
     public void setAuthor(String author){ this.author = author; }
     public void setIsbn(String isbn)    { this.isbn = isbn; }
-    public void setIs_read(Boolean is_read) { this.is_read = is_read; }
+    public void setIsRead(Boolean isRead) { this.isRead = isRead; }
 
     @Override
     public String toString() {

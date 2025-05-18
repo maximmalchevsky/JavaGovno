@@ -31,5 +31,11 @@ public class Service {
     public List<Book> findBooksByAuthor(String author) {
         return repository.findByAuthor(author);
     }
+
+    public void setRead(int id, boolean isRead) {
+        System.out.println("Service.setRead: id=" + id + ", isRead=" + isRead);
+        repository.setRead(id, isRead);
+    }
+
 }
 
