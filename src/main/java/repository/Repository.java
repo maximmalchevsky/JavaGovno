@@ -83,7 +83,6 @@ public class Repository {
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
-            // Убедимся, что коммит будет явно:
             if (!c.getAutoCommit()) {
                 c.setAutoCommit(false);
             }
@@ -96,7 +95,6 @@ public class Repository {
                 throw new RuntimeException("Book id " + id + " not found");
             }
 
-            // **Важный шаг**: докоммитить
             c.commit();
 
         } catch (SQLException e) {

@@ -7,9 +7,10 @@ public class Book {
     private String isbn;
     private Boolean isRead;
 
-    //sql -> is_read
+    //не забыть:
+    // sql -> is_read
     //java -> isRead
-    // Конструкторы
+
     public Book(String title, String author, String isbn, Boolean isRead) {
         this(null, title, author, isbn, isRead);
     }

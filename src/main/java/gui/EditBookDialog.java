@@ -32,7 +32,7 @@ public class EditBookDialog extends JDialog {
         grid.add(new JLabel("Title:"));   grid.add(titleField);
         grid.add(new JLabel("Author:"));  grid.add(authorField);
         grid.add(new JLabel("ISBN:"));    grid.add(isbnField);
-        grid.add(new JLabel("Read:"));    grid.add(readCheck);  // ← добавлено
+        grid.add(new JLabel("Read:"));    grid.add(readCheck);
 
         content.add(grid, BorderLayout.CENTER);
 

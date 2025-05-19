@@ -12,9 +12,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
-/**
- * Чистый слой представления: получает готовый Service через конструктор.
- */
+//получает готовый Service через конструктор.
+
 public class LibraryApp extends JFrame {
 
     private final Service service;
@@ -82,7 +81,7 @@ public class LibraryApp extends JFrame {
         buttons.add(authorSearchField);
         buttons.add(btnSearch);
         buttons.add(btnReset);
-        buttons.add(readCheck); // ← добавлено
+        buttons.add(readCheck);
 
         JPanel listPanel = new JPanel(new BorderLayout());
         listPanel.setBorder(BorderFactory.createTitledBorder(
@@ -147,22 +146,17 @@ public class LibraryApp extends JFrame {
                 Rectangle bounds = list.getCellBounds(index, index);
                 int xInCell = e.getX() - bounds.x;
 
-                // при клике в область чекбокса
                 if (xInCell < BookCellRenderer.BOX_WIDTH) {
                     Book book = model.getElementAt(index);
                     boolean newRead = !Boolean.TRUE.equals(book.getIsRead());
 
-                    // 1) сохраняем в БД
                     service.setRead(book.getId(), newRead);
                     reloadBooks();
 
-                    // 2) меняем локальный объект
                     book.setIsRead(newRead);
 
-                    // ← вот тут: говорим модели, что элемент изменился
                     model.setElementAt(book, index);
 
-                    // 3) (необязательно) досрочная перерисовка этой ячейки
                     list.repaint(bounds);
                 }
             }
@@ -204,12 +198,11 @@ public class LibraryApp extends JFrame {
     private static class BookCellRenderer extends JCheckBox implements ListCellRenderer<Book> {
         private static final Color ALT_BG = new Color(245, 245, 245);
 
-        // Рассчитываем: отступ слева + ширина иконки + зазор между иконкой и текстом
         public static final int BOX_WIDTH;
         static {
             JCheckBox tmp = new JCheckBox();
-            Insets ins = tmp.getInsets();                    // граничные отступы
-            Icon icon = UIManager.getIcon("CheckBox.icon");  // иконка чекбокса в Nimbus
+            Insets ins = tmp.getInsets();
+            Icon icon = UIManager.getIcon("CheckBox.icon");
             BOX_WIDTH = ins.left + icon.getIconWidth() + tmp.getIconTextGap();
         }
 
